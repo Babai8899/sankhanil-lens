@@ -1,137 +1,142 @@
 import React, { useRef, useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import { imageApi } from '../services/imageApi'
 
-const WatermarkedImage = ({ src, alt, className, ...props }) => {
-  const canvasRef = useRef(null)
+const WatermarkedImage = ({ imageId, alt, className, preloadedUrl, onLoadingChange, ...props }) => {
   const imgRef = useRef(null)
-  const [isImageLoaded, setIsImageLoaded] = useState(false)
-  const originalSrc = useRef(src)
+  const [imageSrc, setImageSrc] = useState(preloadedUrl || '')
+  const [loading, setLoading] = useState(!preloadedUrl)
+  const [imageLoaded, setImageLoaded] = useState(false)
 
-  const createWatermarkedImage = (originalImg) => {
-    const canvas = canvasRef.current
-    if (!canvas || !originalImg) return null
+  useEffect(() => {
+    if (preloadedUrl) {
+      setImageSrc(preloadedUrl)
+      setLoading(false)
+      setImageLoaded(false) // Reset on new preloadedUrl
+    } else if (imageId) {
+      loadSecureImage()
+    }
+  }, [imageId, preloadedUrl])
 
-    const ctx = canvas.getContext('2d')
-    
-    // Set canvas dimensions to match image
-    canvas.width = originalImg.naturalWidth
-    canvas.height = originalImg.naturalHeight
+  useEffect(() => {
+    if (onLoadingChange) {
+      onLoadingChange(loading || !imageLoaded)
+    }
+  }, [loading, imageLoaded, onLoadingChange])
 
-    // Draw the original image
-    ctx.drawImage(originalImg, 0, 0)
+  const loadSecureImage = async () => {
+    try {
+      setLoading(true)
+      // Get secure URL with token
+      const secureUrl = await imageApi.getSecureImageUrl(imageId, false)
+      setImageSrc(secureUrl)
+    } catch (error) {
+      console.error('Error loading secure image:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-    // Configure watermark text
-    const watermarkText = 'SANKHANIL'
-    const fontSize = Math.max(canvas.width / 15, 32) // Larger, more visible watermark
-    ctx.font = `bold ${fontSize}px Arial`
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)' // More visible watermark
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)'
-    ctx.lineWidth = 2
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-
-    // Get text dimensions
-    const textMetrics = ctx.measureText(watermarkText)
-    const textWidth = textMetrics.width
-    const textHeight = fontSize
-
-    // Calculate spacing for repeated watermarks
-    const spacingX = textWidth + 40
-    const spacingY = textHeight + 40
-
-    // Create repeated watermarks across the image
-    for (let x = -canvas.width; x < canvas.width * 2; x += spacingX) {
-      for (let y = -canvas.height; y < canvas.height * 2; y += spacingY) {
-        ctx.save()
-        ctx.translate(x, y)
-        ctx.rotate(-Math.PI / 6) // -30 degrees
+  const applyWatermarkTemporarily = async () => {
+    if (imgRef.current) {
+      try {
+        const watermarkedUrl = await imageApi.getSecureImageUrl(imageId, true)
+        imgRef.current.src = watermarkedUrl
         
-        // Draw stroke first (outline)
-        ctx.strokeText(watermarkText, 0, 0)
-        // Then fill text
-        ctx.fillText(watermarkText, 0, 0)
-        
-        ctx.restore()
+        // Reset after 2 seconds
+        setTimeout(() => {
+          loadSecureImage()
+        }, 2000)
+      } catch (error) {
+        console.error('Error applying watermark:', error)
       }
     }
-
-    // Convert canvas to data URL (base64)
-    return canvas.toDataURL('image/jpeg', 0.9)
   }
 
   const handleRightClick = (e) => {
     e.preventDefault()
-    
-    // Create watermarked version when right-clicked
-    if (imgRef.current && isImageLoaded) {
-      const originalImg = new Image()
-      originalImg.crossOrigin = 'anonymous'
-      
-      originalImg.onload = () => {
-        const watermarkedDataUrl = createWatermarkedImage(originalImg)
-        if (watermarkedDataUrl) {
-          // Replace image source temporarily
-          const originalSrc = imgRef.current.src
-          imgRef.current.src = watermarkedDataUrl
-          
-          // Show context menu with watermarked image
-          setTimeout(() => {
-            if (imgRef.current) {
-              imgRef.current.src = originalSrc
-            }
-          }, 3000) // Keep watermarked version for 3 seconds
-        }
-      }
-      
-      originalImg.src = originalSrc.current
-    }
-    
+    applyWatermarkTemporarily()
+    alert('Image download is protected. Watermark applied.')
     return false
   }
 
   const handleDragStart = (e) => {
     e.preventDefault()
+    applyWatermarkTemporarily()
     return false
   }
 
   const handleKeyDown = (e) => {
-    // Prevent common save shortcuts
+    // Prevent common save shortcuts and apply watermark
     if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
       e.preventDefault()
+      applyWatermarkTemporarily()
+      alert('Image download is protected. Watermark applied.')
       return false
     }
   }
 
-  const handleImageLoad = () => {
-    setIsImageLoaded(true)
+  const handleLoad = () => {
+    // Additional protection after image loads
+    if (imgRef.current) {
+      imgRef.current.style.userSelect = 'none'
+    }
+    setImageLoaded(true)
   }
 
   useEffect(() => {
-    originalSrc.current = src
-    
-    // Add keyboard event listener
+    // Prevent print screen and apply watermark
+    const handleKeyUp = (e) => {
+      if (e.key === 'PrintScreen') {
+        applyWatermarkTemporarily()
+        alert('Screenshots detected. Watermark applied for protection.')
+      }
+    }
+
+    document.addEventListener('keyup', handleKeyUp)
     document.addEventListener('keydown', handleKeyDown)
-    
+
     return () => {
+      document.removeEventListener('keyup', handleKeyUp)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [src])
+  }, [imageId, imageSrc])
+
+  if (loading || !imageSrc) {
+    return (
+      <div className={`${className} bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center`}>
+        <motion.div
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.5, 1, 0.5]
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="w-8 h-8"
+        >
+          <svg className="w-full h-full" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" className="text-primary" opacity="0.8"/>
+            <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"/>
+            <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary" opacity="0.6"/>
+          </svg>
+        </motion.div>
+      </div>
+    )
+  }
 
   return (
-    <div className="relative image-container">
+    <div className="relative image-container w-full h-full">
       <img
         ref={imgRef}
-        src={src}
+        src={imageSrc}
         alt={alt}
         className={`protected-image ${className}`}
         onContextMenu={handleRightClick}
         onDragStart={handleDragStart}
-        onLoad={handleImageLoad}
-        onSelectStart={() => false}
-        onMouseDown={(e) => {
-          if (e.button === 2) { // Right click
-            handleRightClick(e)
-          }
-        }}
+        onLoad={handleLoad}
         style={{ 
           userSelect: 'none',
           WebkitUserSelect: 'none',
@@ -141,10 +146,6 @@ const WatermarkedImage = ({ src, alt, className, ...props }) => {
           WebkitTouchCallout: 'none'
         }}
         {...props}
-      />
-      <canvas
-        ref={canvasRef}
-        style={{ display: 'none' }}
       />
       
       {/* Invisible overlay to prevent certain actions */}

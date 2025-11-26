@@ -62,7 +62,7 @@ function Footer() {
           {/* Brand Section */}
           <div className="space-y-4 text-left">
             <div className="flex items-center space-x-2 justify-center md:justify-start">
-              <img src="/src/assets/logo.png" alt="Sankhanil Lens" className="h-8 w-8" />
+              <img src="/logo.png" alt="Sankhanil Lens" className="h-8 w-8" />
               <span className="text-xl font-bold text-white">Sankhanil Lens</span>
             </div>
             <p className="text-gray-400 text-sm max-w-xs mx-auto md:mx-0 text-center md:text-left">

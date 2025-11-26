@@ -1,7 +1,6 @@
 
-import React, { useRef } from 'react'
+import React, { useRef, useState } from 'react'
 import { motion, useInView } from 'framer-motion'
-import WatermarkedImage from './WatermarkedImage'
 
 function About() {
   return (
@@ -21,6 +20,7 @@ function About() {
 function AboutSection() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: false, amount: 0.3 })
+  const [imageLoaded, setImageLoaded] = useState(false)
 
   const imageVariants = {
     hidden: { opacity: 0, x: -100 },
@@ -43,11 +43,39 @@ function AboutSection() {
         className="lg:w-2/5 w-full"
       >
         <div className="relative group overflow-hidden rounded-lg shadow-2xl w-full aspect-[3/4]">
-          <WatermarkedImage 
-            src="/src/assets/profile.jpg" 
+          {/* Loading state */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+              <motion.div
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.5, 1, 0.5]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                className="w-16 h-16"
+              >
+                <svg className="w-full h-full" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" className="text-primary" opacity="0.8"/>
+                  <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"/>
+                  <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary" opacity="0.6"/>
+                </svg>
+              </motion.div>
+            </div>
+          )}
+          <img 
+            src="/profile.jpg" 
             alt="Sankhanil - Photographer"
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            loading="lazy"
+            onLoad={() => setImageLoaded(true)}
+            onError={(e) => {
+              console.error('Image failed to load:', e);
+              setImageLoaded(true); // Hide loading animation even on error
+            }}
+            style={{ display: imageLoaded ? 'block' : 'none' }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <div className="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500">

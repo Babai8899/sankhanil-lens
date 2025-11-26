@@ -1,0 +1,6 @@
+Hello, Good Morning!!!
+I have a client Sankhanil. He is photographer. He mostly clicked nature and street photos.
+He wants an application for showcasing his photographs.
+So create a portfolio types web application.
+I have already created one react application using vite and Tailwind css and daisy ui is installed and properly imported. Additionaly framer motion is also installed. One logo.png is placed in public folder. You can use whenever it's needed. make the page in little dark mode. Don't use too bright colours.
+Some features I want. Like home should be a scrollable page. there some featured photos will be there. The details will be visible once the page is scrolled. The image and details will be coming from faded and will exit also faded. If the first image is in left side and details are in right for the next image it should be reversed. There should be some other navs like about, contact, gallery. Start with these. Regarding other pages like about contact and gallery we will do alter once home will be done. I will give the instrcutions then.

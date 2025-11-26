@@ -1,51 +1,33 @@
 
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import WatermarkedImage from './WatermarkedImage'
+import LoadingSpinner from './LoadingSpinner'
+import { imageApi } from '../services/imageApi'
 
 function Home() {
   const [selectedImage, setSelectedImage] = useState(null)
-  // Sample featured photos data - using local images from public folder
-  const featuredPhotos = [
-    {
-      id: 1,
-      title: "Morning Dew",
-      description: "Captured during the golden hour, this image showcases the delicate beauty of morning dew on wildflowers in the countryside.",
-      category: "Nature",
-      location: "Countryside Valley",
-      image: "/src/assets/1000070291.jpg",
-      year: "2024"
-    },
-    {
-      id: 2,
-      title: "Urban Reflections",
-      description: "Street photography capturing the essence of city life through reflections in rain-soaked pavements during a busy evening.",
-      category: "Street",
-      location: "Downtown District",
-      image: "/src/assets/1000070292.jpg",
-      year: "2024"
-    },
-    {
-      id: 3,
-      title: "Autumn Serenity",
-      description: "A peaceful forest scene during autumn, where golden leaves create a natural carpet under the soft afternoon light.",
-      category: "Nature",
-      location: "Forest Trail",
-      image: "/src/assets/1000070293.jpg",
-      year: "2024"
-    },
-    {
-      id: 4,
-      title: "City Lights",
-      description: "The vibrant energy of the city captured through long exposure photography, showing the flow of traffic and life.",
-      category: "Street",
-      location: "Main Avenue",
-      image: "/src/assets/1000070291.jpg", // Reusing first image for the 4th photo
-      year: "2024"
+  const [featuredPhotos, setFeaturedPhotos] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadFeaturedPhotos()
+  }, [])
+
+  const loadFeaturedPhotos = async () => {
+    try {
+      setLoading(true)
+      // Use the new home endpoint to get only home images (01-02 for each category)
+      const homeImages = await imageApi.getHomeImages()
+      setFeaturedPhotos(homeImages)
+    } catch (err) {
+      console.error('Error loading featured photos:', err)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
 
   const scrollToFeatured = () => {
     const featuredSection = document.getElementById('featured-section')
@@ -76,16 +58,22 @@ function Home() {
           </motion.div>
 
           {/* Photo Grid */}
-          <div className="space-y-24 w-full">
-            {featuredPhotos.map((photo, index) => (
-              <FeaturedPhotoCard 
-                key={photo.id} 
-                photo={photo} 
-                isReversed={index % 2 === 1} 
-                onImageClick={setSelectedImage}
-              />
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <LoadingSpinner message="Loading featured photos..." />
+            </div>
+          ) : (
+            <div className="space-y-24 w-full">
+              {featuredPhotos.map((photo, index) => (
+                <FeaturedPhotoCard 
+                  key={photo._id} 
+                  photo={photo} 
+                  isReversed={index % 2 === 1} 
+                  onImageClick={setSelectedImage}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -114,7 +102,7 @@ function Home() {
               className="relative"
             >
               <WatermarkedImage
-                src={selectedImage.image}
+                imageId={selectedImage._id}
                 alt={selectedImage.title}
                 className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
               />
@@ -235,7 +223,7 @@ function FeaturedPhotoCard({ photo, isReversed, onImageClick }) {
         <div className="relative group overflow-hidden rounded-lg shadow-2xl w-full cursor-pointer"
              onClick={() => onImageClick(photo)}>
           <WatermarkedImage 
-            src={photo.image} 
+            imageId={photo._id} 
             alt={photo.title}
             className="w-full h-96 object-cover transition-transform duration-700 group-hover:scale-110"
             loading="lazy"

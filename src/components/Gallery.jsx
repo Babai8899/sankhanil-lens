@@ -1,75 +1,84 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { Link } from 'react-router-dom'
 import WatermarkedImage from './WatermarkedImage'
+import LoadingSpinner from './LoadingSpinner'
+import { imageApi } from '../services/imageApi'
 
 function Gallery() {
   const [selectedImage, setSelectedImage] = useState(null)
-  // Street Photography images
-  const streetImages = [
-    { 
-      id: 1, 
-      src: '/src/assets/1000070291.jpg', 
-      title: 'Urban Reflections',
-      location: 'Downtown District',
-      year: '2024'
-    },
-    { 
-      id: 2, 
-      src: '/src/assets/1000070292.jpg', 
-      title: 'City Lights at Dusk',
-      location: 'Main Avenue',
-      year: '2024'
-    },
-    { 
-      id: 3, 
-      src: '/src/assets/1000070293.jpg', 
-      title: 'Street Corner Stories',
-      location: 'Historic Quarter',
-      year: '2023'
-    },
-  ]
+  const [streetImages, setStreetImages] = useState([])
+  const [natureImages, setNatureImages] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [preloadedUrls, setPreloadedUrls] = useState({})
 
-  // Nature Photography images (using same images for demo)
-  const natureImages = [
-    { 
-      id: 4, 
-      src: '/src/assets/1000070293.jpg', 
-      title: 'Mountain Serenity',
-      location: 'Highland Valley',
-      year: '2024'
-    },
-    { 
-      id: 5, 
-      src: '/src/assets/1000070291.jpg', 
-      title: 'Morning Dew',
-      location: 'Countryside Meadow',
-      year: '2023'
-    },
-    { 
-      id: 6, 
-      src: '/src/assets/1000070292.jpg', 
-      title: 'Autumn Forest Trail',
-      location: 'Woodland Park',
-      year: '2024'
-    },
-  ]
+  useEffect(() => {
+    loadImages()
+  }, [])
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.3
-      }
+  const loadImages = async () => {
+    try {
+      setLoading(true)
+      // Use the new gallery endpoint to get only gallery images (03-07 for each category)
+      const [street, nature] = await Promise.all([
+        imageApi.getGalleryImages('street'),
+        imageApi.getGalleryImages('nature')
+      ])
+      
+      setStreetImages(street)
+      setNatureImages(nature)
+      
+      // Preload secure URLs for all images
+      await preloadImageUrls([...street, ...nature])
+      
+      setError(null)
+    } catch (err) {
+      console.error('Error loading images:', err)
+      setError('Failed to load images. Please ensure the backend server is running.')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const sectionVariants = {
-    hidden: { opacity: 0, y: 50 },
-    visible: { opacity: 1, y: 0 }
+  const preloadImageUrls = async (images) => {
+    const urlMap = {}
+    await Promise.all(
+      images.map(async (img) => {
+        try {
+          const url = await imageApi.getSecureImageUrl(img._id, false)
+          urlMap[img._id] = url
+        } catch (error) {
+          console.error(`Error preloading URL for image ${img._id}:`, error)
+        }
+      })
+    )
+    setPreloadedUrls(urlMap)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+        <LoadingSpinner message="Loading gallery..." />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-error mb-4">{error}</p>
+          <button 
+            onClick={loadImages}
+            className="btn btn-primary"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -87,17 +96,15 @@ function Gallery() {
         </motion.div>
 
         {/* Content Sections */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
+        <div>
           {/* Street Photography Carousel */}
-          <motion.div variants={sectionVariants} className="mb-16">
+          <div className="mb-16">
             <div className="flex items-center justify-center gap-4 mb-6">
               <h2 className="text-3xl font-bold text-center text-white">Street Photography</h2>
             </div>
-            <Carousel images={streetImages} onImageClick={setSelectedImage} />
+            {streetImages.length > 0 && (
+              <Carousel images={streetImages} onImageClick={setSelectedImage} preloadedUrls={preloadedUrls} />
+            )}
             
             {/* Street Category Button */}
             <div className="text-center mt-6">
@@ -114,14 +121,16 @@ function Gallery() {
                 </motion.button>
               </Link>
             </div>
-          </motion.div>
+          </div>
 
           {/* Nature Photography Carousel */}
-          <motion.div variants={sectionVariants} className="mb-12">
+          <div className="mb-12">
             <div className="flex items-center justify-center gap-4 mb-6">
               <h2 className="text-3xl font-bold text-center text-white">Nature Photography</h2>
             </div>
-            <Carousel images={natureImages} onImageClick={setSelectedImage} />
+            {natureImages.length > 0 && (
+              <Carousel images={natureImages} onImageClick={setSelectedImage} preloadedUrls={preloadedUrls} />
+            )}
             
             {/* Nature Category Button */}
             <div className="text-center mt-6">
@@ -138,10 +147,10 @@ function Gallery() {
                 </motion.button>
               </Link>
             </div>
-          </motion.div>
+          </div>
 
           {/* View All Images Button - Centered at the end */}
-          <motion.div variants={sectionVariants} className="text-center mt-12">
+          <div className="text-center mt-12">
             <Link to="/all-images">
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -154,8 +163,8 @@ function Gallery() {
                 </svg>
               </motion.button>
             </Link>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
 
       {/* Lightbox Modal */}
@@ -183,7 +192,7 @@ function Gallery() {
               className="relative"
             >
               <WatermarkedImage
-                src={selectedImage.src}
+                imageId={selectedImage._id}
                 alt={selectedImage.title}
                 className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
               />
@@ -215,9 +224,10 @@ function Gallery() {
 }
 
 // Carousel Component (Continued in Part 2)
-function Carousel({ images, onImageClick }) {
+function Carousel({ images, onImageClick, preloadedUrls }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [direction, setDirection] = useState(0)
+  const [isImageLoading, setIsImageLoading] = useState(true)
 
   const slideVariants = {
     enter: (direction) => ({
@@ -264,10 +274,11 @@ function Carousel({ images, onImageClick }) {
         {/* Previous Image (15% visible on left) */}
         <div className="absolute left-0 w-1/4 h-3/4 z-0 opacity-50 group">
           <div className="relative overflow-hidden rounded-lg w-full h-full">
-            <img
-              src={images[getPrevIndex()].src}
+            <WatermarkedImage
+              imageId={images[getPrevIndex()]._id}
               alt={images[getPrevIndex()].title}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              preloadedUrl={preloadedUrls[images[getPrevIndex()]._id]}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           </div>
@@ -304,10 +315,44 @@ function Carousel({ images, onImageClick }) {
             >
               <div className="relative group overflow-hidden rounded-lg shadow-2xl w-full h-full cursor-pointer"
                    onClick={() => onImageClick(images[currentIndex])}>
-                <img
-                  src={images[currentIndex].src}
+                {/* Loading skeleton */}
+                {isImageLoading && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center z-10">
+                    <div className="text-center">
+                      <motion.div
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.5, 1, 0.5]
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                        className="w-16 h-16 mx-auto mb-4 relative"
+                      >
+                        <svg className="w-full h-full" viewBox="0 0 24 24" fill="none">
+                          <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" className="text-primary" opacity="0.8"/>
+                          <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"/>
+                          <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary" opacity="0.6"/>
+                        </svg>
+                      </motion.div>
+                      <motion.p
+                        animate={{ opacity: [0.4, 1, 0.4] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="text-gray-400 text-sm"
+                      >
+                        Loading image...
+                      </motion.p>
+                    </div>
+                  </div>
+                )}
+                <WatermarkedImage
+                  imageId={images[currentIndex]._id}
                   alt={images[currentIndex].title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  preloadedUrl={preloadedUrls[images[currentIndex]._id]}
+                  onLoadingChange={setIsImageLoading}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500">
@@ -322,10 +367,11 @@ function Carousel({ images, onImageClick }) {
         {/* Next Image (15% visible on right) */}
         <div className="absolute right-0 w-1/4 h-3/4 z-0 opacity-50 group">
           <div className="relative overflow-hidden rounded-lg w-full h-full">
-            <img
-              src={images[getNextIndex()].src}
+            <WatermarkedImage
+              imageId={images[getNextIndex()]._id}
               alt={images[getNextIndex()].title}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              preloadedUrl={preloadedUrls[images[getNextIndex()]._id]}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           </div>
@@ -359,7 +405,7 @@ function Carousel({ images, onImageClick }) {
           >
             <input
               type="radio"
-              name={`carousel-${images[0].id}`}
+              name={`carousel-${images[0]._id}`}
               className="radio radio-primary radio-sm"
               checked={index === currentIndex}
               onChange={() => {
@@ -385,7 +431,7 @@ function Carousel({ images, onImageClick }) {
           <span className="mx-3">•</span>
           <span className="inline-flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 715.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
             </svg>
             {images[currentIndex].year}
           </span>

@@ -4,6 +4,8 @@ import { motion } from 'framer-motion'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useSearchParams } from 'react-router-dom'
 import WatermarkedImage from './WatermarkedImage'
+import LoadingSpinner from './LoadingSpinner'
+import { imageApi } from '../services/imageApi'
 
 function AllImages() {
   const [searchParams] = useSearchParams()
@@ -12,6 +14,28 @@ function AllImages() {
   const [selectedImage, setSelectedImage] = useState(null)
   const [activeFilter, setActiveFilter] = useState(filterParam)
   const [gridColumns, setGridColumns] = useState(4) // Default 4 columns
+  const [allImages, setAllImages] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Load images from API
+  useEffect(() => {
+    loadImages()
+  }, [])
+
+  const loadImages = async () => {
+    try {
+      setLoading(true)
+      const images = await imageApi.getAllImages()
+      setAllImages(images)
+      setError(null)
+    } catch (err) {
+      console.error('Error loading images:', err)
+      setError('Failed to load images. Please ensure the backend server is running.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Update filter when URL parameter changes
   useEffect(() => {
@@ -78,32 +102,34 @@ function AllImages() {
     }
   }
 
-  // Generate 50 images using the 3 available photos
-  const allImages = Array.from({ length: 50 }, (_, index) => {
-    const imageNumber = (index % 3) + 1
-    const photoNames = ['/src/assets/1000070291.jpg', '/src/assets/1000070292.jpg', '/src/assets/1000070293.jpg']
-    const categories = ['Street', 'Nature']
-    const locations = [
-      'Downtown District', 'Main Avenue', 'Historic Quarter',
-      'Highland Valley', 'Countryside Meadow', 'Woodland Park',
-      'City Center', 'Urban Plaza', 'Garden District',
-      'Mountain Pass', 'River Valley', 'Forest Trail'
-    ]
-    
-    return {
-      id: index + 1,
-      src: photoNames[index % 3],
-      title: `Photography ${index + 1}`,
-      category: categories[index % 2],
-      location: locations[index % locations.length],
-      year: 2024 - (index % 3)
-    }
-  })
-
   // Filter images based on active filter
   const filteredImages = activeFilter === 'All' 
     ? allImages 
-    : allImages.filter(img => img.category === activeFilter)
+    : allImages.filter(img => img.category.toLowerCase() === activeFilter.toLowerCase())
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+        <LoadingSpinner message="Loading images..." />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-error mb-4">{error}</p>
+          <button 
+            onClick={loadImages}
+            className="btn btn-primary"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -166,7 +192,7 @@ function AllImages() {
                 : 'text-base-content/70 border-transparent hover:text-primary hover:border-primary/50'
             }`}
           >
-            Street ({allImages.filter(img => img.category === 'Street').length})
+            Street ({allImages.filter(img => img.category.toLowerCase() === 'street').length})
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.05, y: -2 }}
@@ -178,7 +204,7 @@ function AllImages() {
                 : 'text-base-content/70 border-transparent hover:text-primary hover:border-primary/50'
             }`}
           >
-            Nature ({allImages.filter(img => img.category === 'Nature').length})
+            Nature ({allImages.filter(img => img.category.toLowerCase() === 'nature').length})
           </motion.button>
         </div>
 
@@ -192,14 +218,14 @@ function AllImages() {
         >
           {filteredImages.map((image) => (
             <motion.div
-              key={image.id}
+              key={image._id}
               variants={itemVariants}
               className="relative group cursor-pointer"
               onClick={() => setSelectedImage(image)}
             >
               <div className="relative overflow-hidden rounded-lg shadow-lg aspect-square">
                 <WatermarkedImage
-                  src={image.src}
+                  imageId={image._id}
                   alt={image.title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
@@ -244,7 +270,7 @@ function AllImages() {
               className="relative"
             >
               <WatermarkedImage
-                src={selectedImage.src}
+                imageId={selectedImage._id}
                 alt={selectedImage.title}
                 className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
               />

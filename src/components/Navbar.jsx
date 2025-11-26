@@ -26,7 +26,7 @@ function Navbar() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
-              <img src="/src/assets/logo.png" alt="Sankhanil Lens" className="h-8 w-8" />
+              <img src="/logo.png" alt="Sankhanil Lens" className="h-8 w-8" />
               <span className="text-xl font-bold text-white">Sankhanil Lens</span>
             </Link>
 
