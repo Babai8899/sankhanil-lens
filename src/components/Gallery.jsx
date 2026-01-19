@@ -229,21 +229,37 @@ function Carousel({ images, onImageClick, preloadedUrls }) {
   const [direction, setDirection] = useState(0)
   const [isImageLoading, setIsImageLoading] = useState(true)
 
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   const slideVariants = {
     enter: (direction) => ({
-      x: direction > 0 ? 1000 : -1000,
+      x: !isMobile ? (direction > 0 ? 1000 : -1000) : 0,
+      y: isMobile ? (direction > 0 ? 1000 : -1000) : 0,
       opacity: 0,
       scale: 0.8
     }),
     center: {
       zIndex: 1,
       x: 0,
+      y: 0,
       opacity: 1,
       scale: 1
     },
     exit: (direction) => ({
       zIndex: 0,
-      x: direction < 0 ? 1000 : -1000,
+      x: !isMobile ? (direction < 0 ? 1000 : -1000) : 0,
+      y: isMobile ? (direction < 0 ? 1000 : -1000) : 0,
       opacity: 0,
       scale: 0.8
     })
@@ -270,9 +286,9 @@ function Carousel({ images, onImageClick, preloadedUrls }) {
 
   return (
     <div className="relative w-full max-w-5xl mx-auto">
-      <div className="relative h-[400px] flex items-center justify-center overflow-hidden">
-        {/* Previous Image (15% visible on left) */}
-        <div className="absolute left-0 w-1/4 h-3/4 z-0 opacity-50 group">
+      <div className={`relative ${isMobile ? 'h-[600px] px-6' : 'h-[400px]'} flex items-center justify-center overflow-hidden ${isMobile ? 'flex-col' : ''}`}>
+        {/* Previous Image (15% visible on left/top) */}
+        <div className={`absolute ${isMobile ? 'top-0 w-full h-1/4 px-12' : 'left-0 w-1/4 h-3/4'} z-0 opacity-50 group`}>
           <div className="relative overflow-hidden rounded-lg w-full h-full">
             <WatermarkedImage
               imageId={images[getPrevIndex()]._id}
@@ -285,7 +301,7 @@ function Carousel({ images, onImageClick, preloadedUrls }) {
         </div>
 
         {/* Main Image (Center) */}
-        <div className="relative w-3/5 h-full flex items-center justify-center z-10">
+        <div className={`relative ${isMobile ? 'w-full h-3/5 px-4' : 'w-3/5 h-full'} flex items-center justify-center z-10`}>
           <AnimatePresence initial={false} custom={direction}>
             <motion.div
               key={currentIndex}
@@ -299,11 +315,13 @@ function Carousel({ images, onImageClick, preloadedUrls }) {
                 opacity: { duration: 0.2 },
                 scale: { duration: 0.2 }
               }}
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
+              drag={isMobile ? "y" : "x"}
+              dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
               dragElastic={1}
               onDragEnd={(e, { offset, velocity }) => {
-                const swipe = swipePower(offset.x, velocity.x)
+                const swipe = isMobile 
+                  ? swipePower(offset.y, velocity.y)
+                  : swipePower(offset.x, velocity.x)
 
                 if (swipe < -swipeConfidenceThreshold) {
                   paginate(1)
@@ -364,8 +382,8 @@ function Carousel({ images, onImageClick, preloadedUrls }) {
           </AnimatePresence>
         </div>
 
-        {/* Next Image (15% visible on right) */}
-        <div className="absolute right-0 w-1/4 h-3/4 z-0 opacity-50 group">
+        {/* Next Image (15% visible on right/bottom) */}
+        <div className={`absolute ${isMobile ? 'bottom-0 w-full h-1/4 px-12' : 'right-0 w-1/4 h-3/4'} z-0 opacity-50 group`}>
           <div className="relative overflow-hidden rounded-lg w-full h-full">
             <WatermarkedImage
               imageId={images[getNextIndex()]._id}
@@ -380,18 +398,18 @@ function Carousel({ images, onImageClick, preloadedUrls }) {
         {/* Navigation Buttons */}
         <button
           onClick={() => paginate(-1)}
-          className="absolute left-4 z-20 btn btn-circle btn-ghost bg-base-100/50 hover:bg-base-100/80 cursor-pointer"
+          className={`absolute ${isMobile ? 'top-8 left-1/2 -translate-x-1/2' : 'left-4'} z-20 btn btn-circle btn-ghost bg-base-100/50 hover:bg-base-100/80 cursor-pointer`}
           aria-label="Previous image"
         >
-          <ChevronLeftIcon className="w-6 h-6" />
+          <ChevronLeftIcon className={`w-6 h-6 ${isMobile ? 'rotate-90' : ''}`} />
         </button>
 
         <button
           onClick={() => paginate(1)}
-          className="absolute right-4 z-20 btn btn-circle btn-ghost bg-base-100/50 hover:bg-base-100/80 cursor-pointer"
+          className={`absolute ${isMobile ? 'bottom-8 left-1/2 -translate-x-1/2' : 'right-4'} z-20 btn btn-circle btn-ghost bg-base-100/50 hover:bg-base-100/80 cursor-pointer`}
           aria-label="Next image"
         >
-          <ChevronRightIcon className="w-6 h-6" />
+          <ChevronRightIcon className={`w-6 h-6 ${isMobile ? 'rotate-90' : ''}`} />
         </button>
       </div>
 

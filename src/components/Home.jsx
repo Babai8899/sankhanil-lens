@@ -42,28 +42,28 @@ function Home() {
       <HeroSection onExploreClick={scrollToFeatured} />
       
       {/* Featured Photos Section */}
-      <section id="featured-section" className="py-16 px-4 sm:px-6 lg:px-8 w-full">
+      <section id="featured-section" className="py-8 md:py-16 px-4 sm:px-6 lg:px-8 w-full">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-8 md:mb-16"
           >
-            <h2 className="text-4xl font-bold text-white mb-4">Featured Works</h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3 md:mb-4">Featured Works</h2>
+            <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto px-4">
               A curated selection of photographs capturing moments in nature and urban life
             </p>
           </motion.div>
 
           {/* Photo Grid */}
           {loading ? (
-            <div className="flex justify-center items-center py-20">
+            <div className="flex justify-center items-center py-12 md:py-20">
               <LoadingSpinner message="Loading featured photos..." />
             </div>
           ) : (
-            <div className="space-y-24 w-full">
+            <div className="space-y-12 md:space-y-24 w-full">
               {featuredPhotos.map((photo, index) => (
                 <FeaturedPhotoCard 
                   key={photo._id} 
@@ -138,13 +138,13 @@ function Home() {
 // Hero Section Component
 function HeroSection({ onExploreClick }) {
   return (
-    <section className="relative h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 to-gray-800">
-      <div className="text-center z-10">
+    <section className="relative h-[70vh] min-h-[500px] md:h-screen md:min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 to-gray-800 pt-20 md:pt-0">
+      <div className="text-center z-10 px-4 -mt-8 md:mt-0">
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.2 }}
-          className="text-5xl md:text-7xl font-bold text-white mb-6"
+          className="text-4xl md:text-7xl font-bold text-white mb-4 md:mb-6"
         >
           Sankhanil Lens
         </motion.h1>
@@ -152,7 +152,7 @@ function HeroSection({ onExploreClick }) {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.4 }}
-          className="text-xl md:text-2xl text-gray-300 mb-8"
+          className="text-lg md:text-2xl text-gray-300 mb-6 md:mb-8"
         >
           Capturing moments in nature and street photography
         </motion.p>
@@ -160,17 +160,17 @@ function HeroSection({ onExploreClick }) {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.6 }}
-          className="space-x-4"
+          className="flex flex-col sm:flex-row gap-4 justify-center items-center"
         >
           <button 
             onClick={onExploreClick}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 cursor-pointer"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 md:px-8 rounded-lg transition-colors duration-200 cursor-pointer w-full sm:w-auto"
           >
             View Featured Works
           </button>
           <Link 
             to="/gallery"
-            className="inline-block border border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 cursor-pointer"
+            className="inline-block border border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white font-semibold py-3 px-6 md:px-8 rounded-lg transition-colors duration-200 cursor-pointer w-full sm:w-auto text-center"
           >
             Full Gallery
           </Link>
@@ -182,7 +182,7 @@ function HeroSection({ onExploreClick }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1, delay: 1 }}
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 cursor-pointer"
+        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 cursor-pointer hidden md:block"
         onClick={onExploreClick}
       >
         <div className="animate-bounce">

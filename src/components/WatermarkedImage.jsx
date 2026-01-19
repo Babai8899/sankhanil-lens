@@ -4,6 +4,7 @@ import { imageApi } from '../services/imageApi'
 
 const WatermarkedImage = ({ imageId, alt, className, preloadedUrl, onLoadingChange, ...props }) => {
   const imgRef = useRef(null)
+  const canvasRef = useRef(null)
   const [imageSrc, setImageSrc] = useState(preloadedUrl || '')
   const [loading, setLoading] = useState(!preloadedUrl)
   const [imageLoaded, setImageLoaded] = useState(false)
@@ -37,26 +38,86 @@ const WatermarkedImage = ({ imageId, alt, className, preloadedUrl, onLoadingChan
     }
   }
 
-  const applyWatermarkTemporarily = async () => {
-    if (imgRef.current) {
-      try {
-        const watermarkedUrl = await imageApi.getSecureImageUrl(imageId, true)
-        imgRef.current.src = watermarkedUrl
+  const createWatermarkedImage = (originalImg) => {
+    const canvas = canvasRef.current
+    if (!canvas || !originalImg) return null
+
+    const ctx = canvas.getContext('2d')
+    
+    // Set canvas dimensions to match image
+    canvas.width = originalImg.naturalWidth
+    canvas.height = originalImg.naturalHeight
+
+    // Draw the original image
+    ctx.drawImage(originalImg, 0, 0)
+
+    // Configure watermark text
+    const watermarkText = 'SANKHANIL'
+    const fontSize = Math.max(canvas.width / 100, 8) // Larger, more visible watermark
+    ctx.font = `bold ${fontSize}px Arial`
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)' // More visible watermark
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)'
+    ctx.lineWidth = 2
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+
+    // Get text dimensions
+    const textMetrics = ctx.measureText(watermarkText)
+    const textWidth = textMetrics.width
+    const textHeight = fontSize
+
+    // Calculate spacing for repeated watermarks
+    const spacingX = textWidth + 40
+    const spacingY = textHeight + 40
+
+    // Create repeated watermarks across the image
+    for (let x = -canvas.width; x < canvas.width * 2; x += spacingX) {
+      for (let y = -canvas.height; y < canvas.height * 2; y += spacingY) {
+        ctx.save()
+        ctx.translate(x, y)
+        ctx.rotate(-Math.PI / 6) // -30 degrees
         
-        // Reset after 2 seconds
-        setTimeout(() => {
-          loadSecureImage()
-        }, 2000)
-      } catch (error) {
-        console.error('Error applying watermark:', error)
+        // Draw stroke first (outline)
+        ctx.strokeText(watermarkText, 0, 0)
+        // Then fill text
+        ctx.fillText(watermarkText, 0, 0)
+        
+        ctx.restore()
       }
+    }
+
+    // Convert canvas to data URL (base64)
+    return canvas.toDataURL('image/jpeg', 0.9)
+  }
+
+  const applyWatermarkTemporarily = () => {
+    if (imgRef.current && imageLoaded) {
+      const originalImg = new Image()
+      originalImg.crossOrigin = 'anonymous'
+      
+      originalImg.onload = () => {
+        const watermarkedDataUrl = createWatermarkedImage(originalImg)
+        if (watermarkedDataUrl) {
+          // Replace image source temporarily
+          const currentSrc = imgRef.current.src
+          imgRef.current.src = watermarkedDataUrl
+          
+          // Restore original after 3 seconds
+          setTimeout(() => {
+            if (imgRef.current) {
+              imgRef.current.src = currentSrc
+            }
+          }, 3000)
+        }
+      }
+      
+      originalImg.src = imageSrc
     }
   }
 
   const handleRightClick = (e) => {
     e.preventDefault()
     applyWatermarkTemporarily()
-    alert('Image download is protected. Watermark applied.')
     return false
   }
 
@@ -71,7 +132,6 @@ const WatermarkedImage = ({ imageId, alt, className, preloadedUrl, onLoadingChan
     if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
       e.preventDefault()
       applyWatermarkTemporarily()
-      alert('Image download is protected. Watermark applied.')
       return false
     }
   }
@@ -89,7 +149,6 @@ const WatermarkedImage = ({ imageId, alt, className, preloadedUrl, onLoadingChan
     const handleKeyUp = (e) => {
       if (e.key === 'PrintScreen') {
         applyWatermarkTemporarily()
-        alert('Screenshots detected. Watermark applied for protection.')
       }
     }
 
@@ -100,7 +159,7 @@ const WatermarkedImage = ({ imageId, alt, className, preloadedUrl, onLoadingChan
       document.removeEventListener('keyup', handleKeyUp)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [imageId, imageSrc])
+  }, [imageId, imageSrc, imageLoaded])
 
   if (loading || !imageSrc) {
     return (
@@ -137,6 +196,12 @@ const WatermarkedImage = ({ imageId, alt, className, preloadedUrl, onLoadingChan
         onContextMenu={handleRightClick}
         onDragStart={handleDragStart}
         onLoad={handleLoad}
+        onSelectStart={() => false}
+        onMouseDown={(e) => {
+          if (e.button === 2) { // Right click
+            handleRightClick(e)
+          }
+        }}
         style={{ 
           userSelect: 'none',
           WebkitUserSelect: 'none',
@@ -146,6 +211,10 @@ const WatermarkedImage = ({ imageId, alt, className, preloadedUrl, onLoadingChan
           WebkitTouchCallout: 'none'
         }}
         {...props}
+      />
+      <canvas
+        ref={canvasRef}
+        style={{ display: 'none' }}
       />
       
       {/* Invisible overlay to prevent certain actions */}
@@ -161,4 +230,3 @@ const WatermarkedImage = ({ imageId, alt, className, preloadedUrl, onLoadingChan
 }
 
 export default WatermarkedImage
-

@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline'
-import emailjs from '@emailjs/browser'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function Footer() {
   const [isContactFormOpen, setIsContactFormOpen] = useState(false)
@@ -26,31 +28,25 @@ function Footer() {
     setIsSubmitting(true)
 
     try {
-      // EmailJS configuration
-      const serviceId = 'service_b6nkalb' // Replace with your EmailJS service ID
-      const templateId = 'template_wi49nz1' // Replace with your EmailJS template ID
-      const publicKey = 'H62VOJ-uetCP90fvd' // Replace with your EmailJS public key
+      const response = await fetch(`${API_URL}/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
 
-      // Template parameters for EmailJS
-      const templateParams = {
-        from_name: formData.name,
-        from_email: formData.email,
-        subject: formData.subject,
-        message: formData.message,
-        to_name: 'Sankhanil', // Your name
-        reply_to: formData.email,
+      if (!response.ok) {
+        throw new Error('Failed to send message');
       }
 
-      // Send email using EmailJS
-      await emailjs.send(serviceId, templateId, templateParams, publicKey)
-      
       // Success feedback
       alert('Thank you for your message! I\'ll get back to you soon.')
       setFormData({ name: '', email: '', subject: '', message: '' })
       setIsContactFormOpen(false)
     } catch (error) {
-      console.error('Failed to send email:', error)
-      alert('Sorry, there was an error sending your message. Please try again or contact me directly.')
+      console.error('Failed to send message:', error)
+      alert('Sorry, there was an error sending your message. Please try again or contact me directly at sankha.ni.2105@gmail.com')
     } finally {
       setIsSubmitting(false)
     }
@@ -71,27 +67,33 @@ function Footer() {
           </div>
 
           {/* Contact Information */}
-          <div className="space-y-4 text-center md:text-left">
+          <div className="space-y-4 text-center">
             <h3 className="text-lg font-semibold text-white">Contact</h3>
             <div className="space-y-3">
-              <div className="flex items-center space-x-3 text-gray-400 justify-center md:justify-start">
+              <div className="flex items-center space-x-3 text-gray-400 justify-center md:justify-center">
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span className="text-sm">sankhanil@photographer.com</span>
+                <span className="text-sm">sankha.ni.2105@gmail.com</span>
               </div>
-              <div className="flex items-center space-x-3 text-gray-400 justify-center md:justify-start">
+              <div className="flex items-center space-x-3 text-gray-400 justify-center md:justify-center">
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
-                <span className="text-sm">+91 98765 43210</span>
+                <span className="text-sm">+91 9382906643</span>
               </div>
-              <div className="flex items-center space-x-3 text-gray-400 justify-center md:justify-start">
+              <div className="flex items-center space-x-3 text-gray-400 justify-center md:justify-center">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                <span className="text-sm">+91 9434133444</span>
+              </div>
+              <div className="flex items-center space-x-3 text-gray-400 justify-center md:justify-center">
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span className="text-sm">Kolkata, West Bengal, India</span>
+                <span className="text-sm">Tamluk, West Bengal, India</span>
               </div>
             </div>
           </div>
@@ -103,7 +105,7 @@ function Footer() {
               <motion.a
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                href="https://instagram.com/sankhanil_lens"
+                href="https://www.instagram.com/_be_be_to/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-gray-800 hover:bg-gray-700 p-3 rounded-full transition-colors duration-200"
@@ -116,7 +118,7 @@ function Footer() {
               <motion.a
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                href="https://facebook.com/sankhanil.photographer"
+                href="https://www.facebook.com/sankha.nil.14"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-gray-800 hover:bg-gray-700 p-3 rounded-full transition-colors duration-200"
@@ -129,7 +131,7 @@ function Footer() {
               <motion.a
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                href="https://twitter.com/sankhanil_lens"
+                href="https://x.com/SankhanilDhara"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-gray-800 hover:bg-gray-700 p-3 rounded-full transition-colors duration-200"
@@ -142,7 +144,7 @@ function Footer() {
               <motion.a
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                href="https://linkedin.com/in/sankhanil-photographer"
+                href="https://www.linkedin.com/in/sankhanil-dhara-647409160?utm_source=share_via&utm_content=profile&utm_medium=member_android"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-gray-800 hover:bg-gray-700 p-3 rounded-full transition-colors duration-200"
@@ -173,12 +175,12 @@ function Footer() {
             © 2024 Sankhanil Lens. All rights reserved.
           </p>
           <div className="flex space-x-6 order-1 md:order-2">
-            <a href="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors duration-200 cursor-pointer">
+            <Link to="/privacy-policy" className="text-gray-400 hover:text-white text-sm transition-colors duration-200 cursor-pointer">
               Privacy Policy
-            </a>
-            <a href="/terms" className="text-gray-400 hover:text-white text-sm transition-colors duration-200 cursor-pointer">
-              Terms of Service
-            </a>
+            </Link>
+            <Link to="/terms-and-conditions" className="text-gray-400 hover:text-white text-sm transition-colors duration-200 cursor-pointer">
+              Terms & Conditions
+            </Link>
           </div>
         </div>
       </div>

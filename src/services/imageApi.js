@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://141.148.217.223:3000/api';
+// const API_BASE_URL = 'https://sankha.online/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export const imageApi = {
   // Get all images
